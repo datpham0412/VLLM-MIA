@@ -259,7 +259,7 @@ def http_bot(state, model_selector, temperature, top_p, max_new_tokens, request:
             os.makedirs(os.path.dirname(filename), exist_ok=True)
             image.save(filename)
     
-    if "llama-2" in model_name.lower():
+    if "llama-2" or "bias-7b" in model_name.lower():
         # rebuild just for Llama-2 so we inherit the system instruction…
         tmpl = conv_templates["llama_2"].copy()
         tmpl.append_message(tmpl.roles[0], state.messages[-2][1])
