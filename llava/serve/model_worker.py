@@ -8,7 +8,7 @@ import time
 import threading
 import uuid
 
-from fastapi import FastAPI, Request, BackgroundTasks
+from fastapi import FastAPI, Request, BackgroundTasks, Depends
 from fastapi.responses import StreamingResponse
 import requests
 import torch
@@ -23,10 +23,12 @@ from llava.mm_utils import process_images, load_image_from_base64, tokenizer_ima
 from llava.constants import IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
 from transformers import TextIteratorStreamer
 from threading import Thread
+# import llama
+# import torch
 
 
 GB = 1 << 30
-
+adapter_name = "BIAS-7B"
 worker_id = str(uuid.uuid4())[:6]
 logger = build_logger("model_worker", f"model_worker_{worker_id}.log")
 global_counter = 0
@@ -63,7 +65,29 @@ class ModelWorker:
         self.device = device
         logger.info(f"Loading the model {self.model_name} on worker {worker_id} ...")
         self.tokenizer, self.model, self.image_processor, self.context_len = load_pretrained_model(
-            model_path, model_base, self.model_name, load_8bit, load_4bit, device=self.device, use_flash_attn=use_flash_attn)
+        model_path, model_base, self.model_name, load_8bit, load_4bit, device=self.device, use_flash_attn=use_flash_attn)
+
+        # If user selected the adapter head (e.g. "BIAS-7B"), load it via llama_adapter:
+        # if self.model_name == adapter_name:
+        #     model, preprocess = llama.load(
+        #         adapter_name,                   # e.g. "BIAS-7B"
+        #         llama_dir=args.model_path,      # not used for ckpt lookup
+        #         llama_type="7B",
+        #         device=torch.device(self.device),
+        #         download_root="/fred/oz402/tiend/VLLM-MIA/llama_weights"
+        #     )
+        #     self.model           = model
+        #     self.tokenizer       = preprocess.tokenizer
+        #     self.image_processor = getattr(preprocess, "image_processor", None)
+        #     self.context_len     = model.config.max_position_embeddings
+        #     self.is_multimodal   = self.image_processor is not None
+        # else:
+        #     self.tokenizer, self.model, self.image_processor, self.context_len = load_pretrained_model(
+        #         model_path, model_base, self.model_name,
+        #         load_8bit, load_4bit,
+        #         device=self.device, use_flash_attn=use_flash_attn)
+
+
         self.is_multimodal = 'llava' in self.model_name.lower()
 
         if not no_register:
@@ -160,6 +184,8 @@ class ModelWorker:
         max_context_length = getattr(model.config, 'max_position_embeddings', 2048)
         max_new_tokens = min(int(params.get("max_new_tokens", 256)), 1024)
         stop_str = params.get("stop", None)
+        # if isinstance(stop_str, list):
+        #     stop_str = tuple(stop_str)
         do_sample = True if temperature > 0.001 else False
 
         input_ids = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt').unsqueeze(0).to(self.device)
@@ -254,7 +280,7 @@ if __name__ == "__main__":
     parser.add_argument("--host", type=str, default="localhost")
     parser.add_argument("--port", type=int, default=21002)
     parser.add_argument("--worker-address", type=str,
-        default="http://localhost:21002")
+        default=None)
     parser.add_argument("--controller-address", type=str,
         default="http://localhost:21001")
     parser.add_argument("--model-path", type=str, default="facebook/opt-350m")
@@ -269,6 +295,8 @@ if __name__ == "__main__":
     parser.add_argument("--load-4bit", action="store_true")
     parser.add_argument("--use-flash-attn", action="store_true")
     args = parser.parse_args()
+    if args.worker_address is None:
+        args.worker_address = f"http://{args.host}:{args.port}"
     logger.info(f"args: {args}")
 
     if args.multi_modal:
