@@ -39,6 +39,8 @@ datasets/**
 
 # Target models
 target_models/llava-v1.5-7b/*
+target_models/Llama-2-13b-chat-hf/*
+target_models/open_llama_7b/*
 target_models/pretrained/clip-vit-large-patch14-336/*
 !target_models/llava-v1.5-7b/.gitkeep
 !target_models/pretrained/clip-vit-large-patch14-336/.gitkeep
