@@ -122,16 +122,24 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
     else:
         # Load language model
         if model_base is not None:
-            # PEFT model
-            from peft import PeftModel
+            # Try loading a LoRA‐PEFT adapter on top of the base LM
+            try:
+                from peft import PeftModel
+            except ImportError:
+                PeftModel = None
             tokenizer = AutoTokenizer.from_pretrained(model_base, use_fast=False)
-            model = AutoModelForCausalLM.from_pretrained(model_base, low_cpu_mem_usage=True, **kwargs)
-            print(f"Loading LoRA weights from {model_path}")
-            model = PeftModel.from_pretrained(model, model_path)
-            print(f"Merging weights")
-            model = model.merge_and_unload()
-            print('Convert to FP16...')
-            model.to(torch.float16)
+            model = AutoModelForCausalLM.from_pretrained(
+                model_base, low_cpu_mem_usage=True, **kwargs
+            )
+            if PeftModel is None:
+                print("⚠️  PEFT not available—serving base model only.")
+            else:
+                print(f"Loading LoRA weights from {model_path}…")
+                model = PeftModel.from_pretrained(model, model_path)
+                print("Merging weights…")
+                model = model.merge_and_unload()
+                print("Converting to FP16…")
+                model = model.half()
         else:
             use_fast = False
             if 'mpt' in model_name.lower():
