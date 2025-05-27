@@ -67,28 +67,11 @@ class ModelWorker:
         self.tokenizer, self.model, self.image_processor, self.context_len = load_pretrained_model(
         model_path, model_base, self.model_name, load_8bit, load_4bit, device=self.device, use_flash_attn=use_flash_attn)
 
-        # If user selected the adapter head (e.g. "BIAS-7B"), load it via llama_adapter:
-        # if self.model_name == adapter_name:
-        #     model, preprocess = llama.load(
-        #         adapter_name,                   # e.g. "BIAS-7B"
-        #         llama_dir=args.model_path,      # not used for ckpt lookup
-        #         llama_type="7B",
-        #         device=torch.device(self.device),
-        #         download_root="/fred/oz402/tiend/VLLM-MIA/llama_weights"
-        #     )
-        #     self.model           = model
-        #     self.tokenizer       = preprocess.tokenizer
-        #     self.image_processor = getattr(preprocess, "image_processor", None)
-        #     self.context_len     = model.config.max_position_embeddings
-        #     self.is_multimodal   = self.image_processor is not None
-        # else:
-        #     self.tokenizer, self.model, self.image_processor, self.context_len = load_pretrained_model(
-        #         model_path, model_base, self.model_name,
-        #         load_8bit, load_4bit,
-        #         device=self.device, use_flash_attn=use_flash_attn)
-
-
-        self.is_multimodal = 'llava' in self.model_name.lower()
+        # also treat the BIAS-7B LLaMA-Adapter as multimodal
+        self.is_multimodal = (
+            'llava' in self.model_name.lower()
+            or self.model_name.upper() == "BIAS-7B"
+        )
 
         if not no_register:
             self.register_to_controller()
