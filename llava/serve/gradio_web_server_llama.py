@@ -110,6 +110,7 @@ def load_demo_refresh_model_list(request: gr.Request):
     return state, dropdown_update
 
 
+
 def vote_last_response(state, vote_type, model_selector, request: gr.Request):
     with open(get_conv_log_filename(), "a") as fout:
         data = {
@@ -247,7 +248,6 @@ def http_bot(state, model_selector, temperature, top_p, max_new_tokens, request:
         return
 
 
-    # Construct prompt
     prompt = state.get_prompt()
 
     all_images = state.get_images(return_pil=True)
