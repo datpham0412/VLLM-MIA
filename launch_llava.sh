@@ -14,7 +14,7 @@ python3 -m llava.serve.controller \
 # Step 2: Launch Model Worker
 echo "Launching model worker..."
 python3 -m llava.serve.model_worker \
-  --model-path /fred/oz402/tiend/VLLM-MIA/target_models/llava-v1.5-7b \
+  --model-path /fred/oz402/aho/VLLM-MIA/target_models/llava-v1.5-7b \
   --model-name llava-v1.5-7b \
   --controller-address http://localhost:21001 \
   --port 40000 \
