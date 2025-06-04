@@ -35,7 +35,7 @@ class LLaMA_adapter(nn.Module):
         ) # max_batch_size only affects inferenc
 
         # 1. clip and clip projector
-        self.clip, self.clip_transform = clip.load(clip_model)
+        self.clip, self.clip_transform = clip.load(clip_model, download_root="/fred/oz402/tiend/VLLM-MIA/clip_models")
 
         clip_dim = self.clip.visual.proj.shape[1]
         self.clip_proj = nn.Linear(clip_dim, v_embed_dim)
