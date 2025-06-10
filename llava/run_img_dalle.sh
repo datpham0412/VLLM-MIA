@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define script path
-script="/fred/oz402/aho/VLLM-MIA/run_with_img_flickr.py"
+script="/fred/oz402/aho/VLLM-MIA/run_with_img_dalle.py"
 
 # Extract base name without extension for job name
 base_name=$(basename "$script" .py)
@@ -30,5 +30,5 @@ mamba activate llava
 cd /fred/oz402/aho/VLLM-MIA
 
 # Run the Python script
-python run_with_img_flickr.py --gpu_id 0 --num_gen_token 32 --dataset /fred/oz402/aho/VLLM-MIA/Data/img_Flickr
+python run_with_img_dalle.py --gpu_id 0 --num_gen_token 32 --dataset /fred/oz402/aho/VLLM-MIA/Data/augmented_dalle
 EOT
