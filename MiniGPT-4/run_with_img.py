@@ -27,6 +27,8 @@ from torchvision.transforms import RandomResizedCrop, RandomRotation, RandomAffi
 from scipy.stats import entropy
 import statistics
 
+from datasets import load_from_disk
+
 import logging
 logging.basicConfig(level='ERROR')
 import numpy as np
@@ -39,7 +41,7 @@ import numpy as np
 from datasets import load_dataset
 
 import sys
-sys.path.insert(0,'../')
+sys.path.insert(0,'/fred/oz402/nhnguyen/Model_PJ/VLLM-MIA')
 from metric_util import get_text_metric, get_img_metric, save_output, convert, get_meta_metrics
 from eval import *
 
@@ -52,6 +54,7 @@ def parse_args():
     parser.add_argument("--num_gen_token", type=int, default=32)
     parser.add_argument("--gpu_id",type=int,default=0)
     parser.add_argument("--dataset", type=str, default='img_Flickr')
+    parser.add_argument("--split", type=str, default=None, help="Dataset split name, e.g. 'train', 'test', or 'validation'")
     parser.add_argument("--output_dir", type=str, default="image_MIA")
     parser.add_argument(
         "--options",
@@ -254,12 +257,15 @@ if __name__ == '__main__':
     vis_processor = registry.get_processor_class(
         vis_processor_cfg.name).from_config(vis_processor_cfg)
 
-    dataset = load_dataset("JaineLi/VL-MIA-image", args.dataset, split='train')
+    dataset = load_from_disk(args.dataset)
+    if args.split:
+        dataset = dataset[args.split]
+    
     data = convert_huggingface_data_to_list_dic(dataset)
 
     # data = data[:10]
-
-    output_dir = f"{args.output_dir}/{args.dataset}/gen_{args.num_gen_token}_tokens"
+    dataset_name = os.path.basename(args.dataset.rstrip("/"))
+    output_dir = f"{args.output_dir}/{dataset_name}/gen_{args.num_gen_token}_tokens"
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
     logging.info('=======Initialization Finished=======')
@@ -268,7 +274,14 @@ if __name__ == '__main__':
 
     all_output = evaluate_data(model, vis_processor, data, text, args.gpu_id, num_gen_token)
 
+
+    #save output
+    output_path = f"{output_dir}/all_output.json"
+    with open(output_path, "w") as f:
+        json.dump(all_output, f, indent=2)
+
+    print(f"Saved all_output to {output_path}")
+
+    
+
     fig_fpr_tpr_img(all_output, output_dir)
-
-
-

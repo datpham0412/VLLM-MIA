@@ -1,3 +1,4 @@
+import json
 import argparse
 import os
 import random
@@ -23,6 +24,7 @@ from minigpt4.runners import *
 from minigpt4.tasks import *
 from PIL import Image
 
+from datasets import load_from_disk
 import logging
 logging.basicConfig(level='ERROR')
 import numpy as np
@@ -33,7 +35,7 @@ import numpy as np
 from datasets import load_dataset
 
 import sys
-sys.path.insert(0,'../')
+sys.path.insert(0,'/fred/oz402/nhnguyen/Model_PJ/VLLM-MIA')
 from metric_util import get_text_metric, get_img_metric, get_meta_metrics, convert, save_output
 from eval import *
 
@@ -47,7 +49,8 @@ def parse_args():
                         default=0,
                         help="specify the gpu to load the model.")
     parser.add_argument('--output_dir', type=str, default="text_MIA")
-    parser.add_argument('--dataset', type=str, default="minigpt4_stage2_text")
+    parser.add_argument('--dataset', type=str, default=None)
+    parser.add_argument("--split", type=str, default=None, help="Dataset split name")
     parser.add_argument("--text_len", type=int, default=32)
     parser.add_argument(
         "--options",
@@ -194,10 +197,13 @@ if __name__ == '__main__':
         vis_processor_cfg.name).from_config(vis_processor_cfg)
     
     text_len = args.text_len
-    output_dir = f"{args.output_dir}/length_{text_len}"
+    dataset_name = os.path.basename(args.dataset.rstrip("/"))
+    output_dir = f"{args.output_dir}/{dataset_name}/length_{text_len}"
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
-    dataset = load_dataset("JaineLi/VL-MIA-text", args.dataset, split=f"length_{text_len}")
+    dataset = load_from_disk(args.dataset)
+    if args.split:
+        dataset = dataset[args.split]
     data = convert_huggingface_data_to_list_dic(dataset)
     # data = data[:10]
 
@@ -205,7 +211,12 @@ if __name__ == '__main__':
 
     all_output = evaluate_data(model, vis_processor, data, 'input', args.gpu_id)
 
+   #save output
+    output_path = f"{output_dir}/{dataset_name}/all_output.json"
+    with open(output_path, "w") as f:
+        json.dump(all_output, f, indent=2)
+
+    print(f"Saved all_output to {output_path}")
+
+
     fig_fpr_tpr(all_output, output_dir)
-
-
-

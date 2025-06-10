@@ -75,8 +75,8 @@ def parse_args():
     parser.add_argument("--num_beams", type=int, default=1)
     parser.add_argument("--num_gen_token", type=int, default=32)
     parser.add_argument("--gpu_id",type=int,default=0)
-    parser.add_argument("--dataset", type=str, default='/fred/oz402/aho/VLLM-MIA/Data/img_Flickr')
-    parser.add_argument("--output_dir", type=str, default="/fred/oz402/aho/VLLM-MIA/Result/image_MIA")
+    parser.add_argument("--dataset", type=str, default='/fred/oz402/aho/VLLM-MIA/Data/augmented_dalle')
+    parser.add_argument("--output_dir", type=str, default="/fred/oz402/aho/VLLM-MIA/Result/augmented_dalle_MIA")
     parser.add_argument("--severity", type=int, default=6)
     args = parser.parse_args()
     return args
@@ -333,8 +333,10 @@ if __name__ == '__main__':
     logger.info(f"Model name: {model_name}")
     
     tokenizer, model, image_processor, context_len = load_pretrained_model(
-        args.model_path, args.model_base, model_name, gpu_id = args.gpu_id
-    )
+    args.model_path, args.model_base, model_name
+)
+    model = model.cuda(args.gpu_id)
+
     logger.info(f"Loaded model from {args.model_path}")
 
     conv_mode = load_conversation_template(model_name)

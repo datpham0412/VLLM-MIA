@@ -3,10 +3,10 @@ import datetime
 import json
 import os
 import time
-
+ 
 import gradio as gr
 import requests
-
+ 
 from llava.conversation import (default_conversation, conv_templates,
                                    SeparatorStyle)
 from llava.constants import LOGDIR
@@ -14,30 +14,31 @@ from llava.utils import (build_logger, server_error_msg,
     violates_moderation, moderation_msg)
 import hashlib
 
-
 models = []
 
+
 logger = build_logger("gradio_web_server", "gradio_web_server.log")
-
+ 
 headers = {"User-Agent": "LLaVA Client"}
-
+ 
 no_change_btn = gr.Button()
 enable_btn = gr.Button(interactive=True)
 disable_btn = gr.Button(interactive=False)
-
+ 
 priority = {
     "vicuna-13b": "aaaaaaa",
     "koala-13b": "aaaaaab",
 }
-
-
+ 
+ 
 def get_conv_log_filename():
     t = datetime.datetime.now()
     name = os.path.join(LOGDIR, f"{t.year}-{t.month:02d}-{t.day:02d}-conv.json")
     return name
-
-
+ 
+ 
 def get_model_list():
+
     try:
         logger.info(f"Sending refresh request to {args.controller_url}/refresh_all_workers")
         ret = requests.post(args.controller_url + "/refresh_all_workers")
@@ -68,7 +69,6 @@ def get_model_list():
         logger.error(f"❌ JSON decode error in get_model_list: {e}, raw response: {ret.text}")
         return []
 
-
 get_window_url_params = """
 function() {
     const params = new URLSearchParams(window.location.search);
@@ -77,21 +77,21 @@ function() {
     return url_params;
     }
 """
-
-
+ 
+ 
 def load_demo(url_params, request: gr.Request):
     logger.info(f"load_demo. ip: {request.client.host}. params: {url_params}")
-
+ 
     dropdown_update = gr.Dropdown(visible=True)
     if "model" in url_params:
         model = url_params["model"]
         if model in models:
             dropdown_update = gr.Dropdown(value=model, visible=True)
-
+ 
     state = default_conversation.copy()
     return state, dropdown_update
-
-
+ 
+ 
 def load_demo_refresh_model_list(request: gr.Request):
     logger.info(f"🔄 load_demo_refresh_model_list triggered by IP: {request.client.host}")
     model_list = get_model_list()
@@ -109,8 +109,6 @@ def load_demo_refresh_model_list(request: gr.Request):
     )
     return state, dropdown_update
 
-
-
 def vote_last_response(state, vote_type, model_selector, request: gr.Request):
     with open(get_conv_log_filename(), "a") as fout:
         data = {
@@ -121,26 +119,26 @@ def vote_last_response(state, vote_type, model_selector, request: gr.Request):
             "ip": request.client.host,
         }
         fout.write(json.dumps(data) + "\n")
-
-
+ 
+ 
 def upvote_last_response(state, model_selector, request: gr.Request):
     logger.info(f"upvote. ip: {request.client.host}")
     vote_last_response(state, "upvote", model_selector, request)
     return ("",) + (disable_btn,) * 3
-
-
+ 
+ 
 def downvote_last_response(state, model_selector, request: gr.Request):
     logger.info(f"downvote. ip: {request.client.host}")
     vote_last_response(state, "downvote", model_selector, request)
     return ("",) + (disable_btn,) * 3
-
-
+ 
+ 
 def flag_last_response(state, model_selector, request: gr.Request):
     logger.info(f"flag. ip: {request.client.host}")
     vote_last_response(state, "flag", model_selector, request)
     return ("",) + (disable_btn,) * 3
-
-
+ 
+ 
 def regenerate(state, image_process_mode, request: gr.Request):
     logger.info(f"regenerate. ip: {request.client.host}")
     state.messages[-1][-1] = None
@@ -149,14 +147,14 @@ def regenerate(state, image_process_mode, request: gr.Request):
         prev_human_msg[1] = (*prev_human_msg[1][:2], image_process_mode)
     state.skip_next = False
     return (state, state.to_gradio_chatbot(), "", None) + (disable_btn,) * 5
-
-
+ 
+ 
 def clear_history(request: gr.Request):
     logger.info(f"clear_history. ip: {request.client.host}")
     state = default_conversation.copy()
     return (state, state.to_gradio_chatbot(), "", None) + (disable_btn,) * 5
-
-
+ 
+ 
 def add_text(state, text, image, image_process_mode, request: gr.Request):
     logger.info(f"add_text. ip: {request.client.host}. len: {len(text)}")
     if len(text) <= 0 and image is None:
@@ -168,7 +166,7 @@ def add_text(state, text, image, image_process_mode, request: gr.Request):
             state.skip_next = True
             return (state, state.to_gradio_chatbot(), moderation_msg, None) + (
                 no_change_btn,) * 5
-
+ 
     text = text[:1536]  # Hard cut-off
     if image is not None:
         text = text[:1200]  # Hard cut-off for images
@@ -181,18 +179,18 @@ def add_text(state, text, image, image_process_mode, request: gr.Request):
     state.append_message(state.roles[1], None)
     state.skip_next = False
     return (state, state.to_gradio_chatbot(), "", None) + (disable_btn,) * 5
-
-
+ 
+ 
 def http_bot(state, model_selector, temperature, top_p, max_new_tokens, request: gr.Request):
     logger.info(f"http_bot. ip: {request.client.host}")
     start_tstamp = time.time()
     model_name = model_selector
-
+ 
     if state.skip_next:
         # This generate call is skipped due to invalid inputs
         yield (state, state.to_gradio_chatbot()) + (no_change_btn,) * 5
         return
-
+ 
     if len(state.messages) == state.offset + 2:
         # First round of conversation
         if ("llava" in model_name.lower()) or (model_name.lower() == "bias-7b"):
@@ -233,23 +231,22 @@ def http_bot(state, model_selector, temperature, top_p, max_new_tokens, request:
         new_state.append_message(new_state.roles[0], state.messages[-2][1])
         new_state.append_message(new_state.roles[1], None)
         state = new_state
-
+ 
     # Query worker address
     controller_url = args.controller_url
     ret = requests.post(controller_url + "/get_worker_address",
             json={"model": model_name})
     worker_addr = ret.json()["address"]
     logger.info(f"model_name: {model_name}, worker_addr: {worker_addr}")
-
+ 
     # No available worker
     if worker_addr == "":
         state.messages[-1][-1] = server_error_msg
         yield (state, state.to_gradio_chatbot()) + (disable_btn, disable_btn, disable_btn, enable_btn, enable_btn)
         return
 
-
     prompt = state.get_prompt()
-
+ 
     all_images = state.get_images(return_pil=True)
     all_image_hash = [hashlib.md5(image.tobytes()).hexdigest() for image in all_images]
     for image, hash in zip(all_images, all_image_hash):
@@ -258,6 +255,7 @@ def http_bot(state, model_selector, temperature, top_p, max_new_tokens, request:
         if not os.path.isfile(filename):
             os.makedirs(os.path.dirname(filename), exist_ok=True)
             image.save(filename)
+
     
     if "llama-2" in model_name.lower():
         # rebuild just for Llama-2 so we inherit the system instruction…
@@ -267,6 +265,7 @@ def http_bot(state, model_selector, temperature, top_p, max_new_tokens, request:
         full_prompt = tmpl.get_prompt()
         # strip only the literal labels, keep the rest of the template
         prompt = full_prompt.replace("USER:", "").replace("ASSISTANT:", "").strip()
+
 
     pload = {
        "model": model_name,
@@ -279,12 +278,12 @@ def http_bot(state, model_selector, temperature, top_p, max_new_tokens, request:
         "images": f'List of {len(state.get_images())} images: {all_image_hash}',
     }
     logger.info(f"==== request ====\n{pload}")
-
+ 
     pload['images'] = state.get_images()
-
+ 
     state.messages[-1][-1] = "▌"
     yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 5
-
+ 
     try:
         # Stream output
         response = requests.post(worker_addr + "/worker_generate_stream",
@@ -306,13 +305,13 @@ def http_bot(state, model_selector, temperature, top_p, max_new_tokens, request:
         state.messages[-1][-1] = server_error_msg
         yield (state, state.to_gradio_chatbot()) + (disable_btn, disable_btn, disable_btn, enable_btn, enable_btn)
         return
-
+ 
     state.messages[-1][-1] = state.messages[-1][-1][:-1]
     yield (state, state.to_gradio_chatbot()) + (enable_btn,) * 5
-
+ 
     finish_tstamp = time.time()
     logger.info(f"{output}")
-
+ 
     with open(get_conv_log_filename(), "a") as fout:
         data = {
             "tstamp": round(finish_tstamp, 4),
@@ -456,6 +455,7 @@ body {
     text-align: center;
     margin-bottom: 1rem;
 }
+
 
 #buttons button {
     min-width: min(120px,100%);
@@ -622,6 +622,7 @@ learn_more_markdown = ("""
 This service is powered by state-of-the-art vision-language models. It is provided for research purposes only, subject to the [LLaMA License](https://github.com/facebookresearch/llama/blob/main/MODEL_CARD.md), [OpenAI Terms](https://openai.com/policies/terms-of-use), and [ShareGPT Privacy Policy](https://chrome.google.com/webstore/detail/sharegpt-share-your-chatg/daiacboceoaocpibfodeljbdfacokfjb).
 """)
 
+
 def build_demo(embed_mode, cur_dir=None, concurrency_count=10):
     textbox = gr.Textbox(
         show_label=False, 
@@ -633,10 +634,10 @@ def build_demo(embed_mode, cur_dir=None, concurrency_count=10):
     with gr.Blocks(title="AI Vision Assistant", theme=gr.themes.Soft(), css=block_css) as demo:
         gr.HTML(f"<script>{theme_switch_js}</script>")
         state = gr.State()
-
+ 
         if not embed_mode:
             gr.Markdown(title_markdown)
-
+ 
         with gr.Row():
             with gr.Column(scale=6):
                 chatbot = gr.Chatbot(
@@ -667,6 +668,7 @@ def build_demo(embed_mode, cur_dir=None, concurrency_count=10):
                         label="Select Model",
                         allow_custom_value=True,
                         interactive=True,
+
                         container=True
                     )
                 
@@ -720,6 +722,7 @@ def build_demo(embed_mode, cur_dir=None, concurrency_count=10):
                         label="Max Output Length"
                     )
 
+
         if not embed_mode:
             with gr.Row():
                 with gr.Column():
@@ -728,7 +731,7 @@ def build_demo(embed_mode, cur_dir=None, concurrency_count=10):
                     gr.Markdown(learn_more_markdown)
                     
         url_params = gr.JSON(visible=False)
-
+ 
         # Register listeners
         btn_list = [upvote_btn, downvote_btn, flag_btn, regenerate_btn, clear_btn]
         upvote_btn.click(
@@ -746,7 +749,7 @@ def build_demo(embed_mode, cur_dir=None, concurrency_count=10):
             [state, model_selector],
             [textbox, upvote_btn, downvote_btn, flag_btn]
         )
-
+ 
         regenerate_btn.click(
             regenerate,
             [state, image_process_mode],
@@ -757,14 +760,14 @@ def build_demo(embed_mode, cur_dir=None, concurrency_count=10):
             [state, chatbot] + btn_list,
             concurrency_limit=concurrency_count
         )
-
+ 
         clear_btn.click(
             clear_history,
             None,
             [state, chatbot, textbox, imagebox] + btn_list,
             queue=False
         )
-
+ 
         textbox.submit(
             add_text,
             [state, textbox, imagebox, image_process_mode],
@@ -776,7 +779,7 @@ def build_demo(embed_mode, cur_dir=None, concurrency_count=10):
             [state, chatbot] + btn_list,
             concurrency_limit=concurrency_count
         )
-
+ 
         submit_btn.click(
             add_text,
             [state, textbox, imagebox, image_process_mode],
@@ -787,7 +790,7 @@ def build_demo(embed_mode, cur_dir=None, concurrency_count=10):
             [state, chatbot] + btn_list,
             concurrency_limit=concurrency_count
         )
-
+ 
         if args.model_list_mode == "once":
             demo.load(
                 load_demo,
@@ -804,10 +807,10 @@ def build_demo(embed_mode, cur_dir=None, concurrency_count=10):
             )
         else:
             raise ValueError(f"Unknown model list mode: {args.model_list_mode}")
-
+ 
     return demo
-
-
+ 
+ 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", type=str, default="0.0.0.0")
@@ -826,6 +829,7 @@ if __name__ == "__main__":
     models = get_model_list()
     logger.info(f"🧠 Final models used for UI: {models}")
 
+
     logger.info(args)
     demo = build_demo(args.embed, concurrency_count=args.concurrency_count)
     demo.queue(
@@ -835,3 +839,4 @@ if __name__ == "__main__":
         server_port=args.port,
         share=args.share
     )
+ 

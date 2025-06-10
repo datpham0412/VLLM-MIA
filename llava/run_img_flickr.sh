@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define script path
-script="/fred/oz402/aho/VLLM-MIA/run_with_img.py"
+script="/fred/oz402/aho/VLLM-MIA/run_with_img_flickr.py"
 
 # Extract base name without extension for job name
 base_name=$(basename "$script" .py)
@@ -16,7 +16,7 @@ sbatch <<EOT
 #SBATCH --cpus-per-task=12                          # Number of CPU cores per task
 #SBATCH --gres=gpu:1                                # Request 1 GPU
 #SBATCH --mem=16G                                   # Memory per node
-#SBATCH --time=7:00:00                             # Maximum execution time
+#SBATCH --time=3:00:00                              # Maximum execution time
 #SBATCH --partition=gpu                             # Submit to GPU partition
 
 # Load required modules
@@ -30,5 +30,5 @@ mamba activate llava
 cd /fred/oz402/aho/VLLM-MIA
 
 # Run the Python script
-python run_with_img.py --gpu_id 0 --num_gen_token 32 --dataset /fred/oz402/aho/VLLM-MIA/Data/img_Flickr
+python run_with_img_flickr.py --gpu_id 0 --num_gen_token 32 --dataset /fred/oz402/aho/VLLM-MIA/Data/augmented_Flickr
 EOT

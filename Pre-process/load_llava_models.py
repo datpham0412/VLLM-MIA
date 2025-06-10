@@ -1,6 +1,8 @@
 import os
 import sys
-sys.path.append("/fred/oz402/tiend/VLLM-MIA/")
+
+sys.path.append("/fred/oz402/aho/VLLM-MIA/")
+
 from llava.model.language_model.llava_llama import LlavaLlamaForCausalLM
 from llava.model.language_model.llava_llama import LlavaConfig
 
@@ -74,7 +76,8 @@ if __name__ == "__main__":
     print("🚀 Starting model and processor download...")
 
     # === LLaVA model ===
-    llava_local = "/fred/oz402/tiend/VLLM-MIA/target_models/llava-v1.5-7b"
+
+    llava_local = "/fred/oz402/aho/VLLM-MIA/target_models/llava-v1.5-7b"
     llava_remote = "liuhaotian/llava-v1.5-7b"
 
     tokenizer, model = load_or_download_custom_model(
@@ -86,11 +89,11 @@ if __name__ == "__main__":
     )
 
     # === CLIP Image Processor ===
-    clip_path = "/fred/oz402/tiend/VLLM-MIA/target_models/pretrained/clip-vit-large-patch14-336"
+
+    clip_path = "/fred/oz402/aho/VLLM-MIA/target_models/pretrained/clip-vit-large-patch14-336"
     # download_clip_processor(local_path=clip_path)
 
     # === CLIP Vision Model ===
-    download_clip_model(local_path=clip_path)
+    # download_clip_model(local_path=clip_path)
 
     print("🏁 All components downloaded and saved locally.")
-

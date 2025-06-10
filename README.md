@@ -64,3 +64,12 @@ python run_with_text.py --gpu_id 0 --text_len 32 --dataset llava_v15_gpt_text
   year = {2024}
 }
 ```
+Run `sinteractive --gres=gpu:1 --ntasks=1 --time=02:00:00 --mem=16G`
+Then load modules by running these commands:
+
+```
+    cd /fred/oz396/aho/IA-MIA
+    module load cuda/12.4.0
+    module -q load conda
+    mamba activate iamia
+```

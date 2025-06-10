@@ -73,6 +73,7 @@ class ModelWorker:
             or self.model_name.upper() == "BIAS-7B"
         )
 
+
         if not no_register:
             self.register_to_controller()
             self.heart_beat_thread = threading.Thread(

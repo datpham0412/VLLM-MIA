@@ -1,14 +1,15 @@
 model:
   arch: minigpt4
-  model_type: pretrain_llama2
+  model_type: pretrain_vicuna0
   freeze_vit: True
   freeze_qformer: True
   max_txt_len: 160
   end_sym: "</s>"
   low_resource: True
-  prompt_path: "prompts/alignment.txt"
+  prompt_path: "MiniGPT-4/prompts/alignment.txt"
   # prompt_template: '[INST] {} [/INST] '
-  ckpt: '' #pre-trained ckpt
+  ckpt: '/fred/oz402/nhnguyen/Model/pretrained_llava_minigpt4.pth' #pre-trained ckpt
+  llama_model: /fred/oz402/nhnguyen/Model_PJ/VLLM-MIA/Llava_minigpt4
 
 
 datasets:
