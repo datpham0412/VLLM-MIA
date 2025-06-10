@@ -199,10 +199,11 @@ def tokenizer_image_token(prompt, tokenizer, image_token_index=IMAGE_TOKEN_INDEX
 
     if return_tensors is not None:
         if return_tensors == 'pt':
-            return torch.tensor(input_ids, dtype=torch.long), prompt_chunks  # <- RETURN TWO VALUES
+
+            return torch.tensor(input_ids, dtype=torch.long)
         raise ValueError(f'Unsupported tensor type: {return_tensors}')
-    
-    return input_ids, prompt_chunks  # <- RETURN TWO VALUES
+    return input_ids
+
 
 
 def get_model_name_from_path(model_path):

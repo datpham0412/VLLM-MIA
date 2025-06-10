@@ -3,7 +3,6 @@ import torch.nn as nn
 
 from transformers import CLIPVisionModel, CLIPImageProcessor, CLIPVisionConfig
 
-local_clip_path = "/fred/oz402/aho/VLLM-MIA/target_models/pretrained/clip-vit-large-patch14-336"
 
 class CLIPVisionTower(nn.Module):
     def __init__(self, vision_tower, args, delay_load=False):
@@ -27,10 +26,15 @@ class CLIPVisionTower(nn.Module):
             print('{} is already loaded, `load_model` called again, skipping.'.format(self.vision_tower_name))
             return
 
-        self.image_processor = CLIPImageProcessor.from_pretrained(self.vision_tower_name)
+
+        self.image_processor = CLIPImageProcessor.from_pretrained(
+            "/fred/oz402/tiend/models/clip-vit-large-patch14-336",
+            local_files_only=True,
+            token="not-needed",
+            trust_remote_code=True
+        )
         self.vision_tower = CLIPVisionModel.from_pretrained(self.vision_tower_name, device_map=device_map)
-        self.image_processor = CLIPImageProcessor.from_pretrained(local_clip_path)
-        self.vision_tower = CLIPVisionModel.from_pretrained(local_clip_path, device_map=device_map)
+
         self.vision_tower.requires_grad_(False)
 
         self.is_loaded = True
@@ -120,8 +124,7 @@ class CLIPVisionTowerS2(CLIPVisionTower):
 
         self.image_processor = CLIPImageProcessor.from_pretrained(self.vision_tower_name)
         self.vision_tower = CLIPVisionModel.from_pretrained(self.vision_tower_name, device_map=device_map)
-        self.image_processor = CLIPImageProcessor.from_pretrained(local_clip_path)
-        self.vision_tower = CLIPVisionModel.from_pretrained(local_clip_path, device_map=device_map)
+
         self.vision_tower.requires_grad_(False)
 
         self.image_processor.size['shortest_edge'] = self.s2_image_size
